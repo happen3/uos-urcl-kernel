@@ -133,6 +133,6 @@ JMP .lscp
 
 .lscp // low code space (OS)
 .r
-    // Dear OS developer, put your OS code here.
+[IMPORT "OS"]
 HLT
 JMP .r // jump to init
