@@ -1,139 +1,249 @@
 // This should be put in the kernel's .lscp
-BITS == 16
-MINHEAP 100
-MINSTACK 28
-MINREG 32
-@DEFINE counter r19 
-@DEFINE return_address r16
-@DEFINE max_print r8
-@DEFINE function_return r15
-
-// reserved for graphics
-// r28, r27, r26
-//  x    y   CLR
-// for function users: please sure you push your arguments in reverse order compared to the signature to the stack.
-
-IMM @max_print 56 // default
-JMP .lscp
-// high code space (UOS functions)
-.fn_m0 // UOS function 0 sector MEMORY: freeall
-    IMM r31 0 // make sure the temp counter is ok
-    .loop_mem
-        BRE @return_address r31 100 // max memory then we return
-        STR r31 0 // reset the byte
-        ADD r31 r31 1 // increment the counter
-        JMP .loop_mem  // loop over
-.fn_v0 // UOS function 0 sector VIDEO SERVICES: print
-    // we then make a loop up until the character limit which is 100
-    IMM r31 @counter // make sure temp counter is ok
-    .loop_chrs
-        BRE @return_address r31 @max_print // loop (max_print) times
-        LOD r32 r31 // load the next character
-        OUT 1 r32 // output the newly loaded character
-        STR r31 0
-        ADD r31 r31 1 // increment the counter
-        JMP .loop_chrs // loop over
-.fn_g0 // UOS function 0 sector GENERAL: getch
-    IN @function_return 1 // take input from port 1 then send it into the function return
-    JMP @return_address // don't forget!!!
-.fn_g1 // UOS function 1 sector GENERAL: getch_echo
-    IMM @function_return 0 // reset the function return
-    STR 95 @return_address // store the old return address
-    IMM @return_address ~+2 // set the return address to the 2 next instructions
-    JMP .fn_g0 // JUMP to UOS function 0 sector GENERAL: getch
-    OUT 1 @function_return // print the getched character
-    LOD @return_address 95 // load the old return address
-    STR 95 0 // free the memory
-    JMP @return_address // return to address
-.fn_m1 // UOS function 1 sector MEMORY: getfree
-    IMM r31 0x57 // make sure the temp counter is ok
-    IMM r29 0 // make sure r29 is okay for read
-    .loop_memf
-        BRE @return_address r31 0x80 // max memory then we return
-        LOD r29 r31 // load the byte into memory
-        BRE .inc_memf r29 0 // if r29 (what we loaded) is 0, jump to inc_memf
-        ADD r31 r31 1 // increment the counter
-        JMP .loop_memf // loop over
-        .inc_memf
-            ADD @function_return @function_return 1 // increment the count of free locations
-            ADD r31 r31 1 // increment the counter
-            JMP .loop_memf // loop over
-.fn_m2 // UOS function 0 sector MEMORY: free_input
-    IMM r31 0 // make sure the temp counter is ok
-    .loop_mem_cd
-        BRE @return_address r31 @max_print // max memory then we return
-        STR r31 0 // reset the byte
-        ADD r31 r31 1 // increment the counter
-        JMP .loop_mem_cd // loop over
-.fn_g2 // UOS function 2 sector GENERAL: getl
-    IMM r31 0 // reset the temp counter
-    .loop_getlc
-        BRE @return_address r31 @max_print // max charcount and return when equal
-        LOD r32 r31 // load the memory contents for address specified as per r31
-        BRG ~+2 r32 0 // will send us * when r32 is greater than 0
-        JMP .loop_getlc // loop over
-        ADD @function_return @function_return 1
-        JMP .loop_getlc // loop over
-.fn_g3 // UOS function 3 sector GENERAL: parseint, signature: V (number)
-    IMM r5 0 // reset r5
-    POP r5 // get first argument from stack
-    BRE .parseint_0 r5 '0'
-    BRE .parseint_1 r5 '1'
-    BRE .parseint_2 r5 '2'
-    BRE .parseint_3 r5 '3'
-    BRE .parseint_4 r5 '4'
-    BRE .parseint_5 r5 '5'
-    BRE .parseint_6 r5 '6'
-    BRE .parseint_7 r5 '7'
-    BRE .parseint_8 r5 '8'
-    BRE .parseint_9 r5 '9'
-    JMP .parseint_illegal_char
-    .parseint_0
-        IMM @function_return 0
-        JMP @return_address
-    .parseint_1
-        IMM @function_return 1
-        JMP @return_address
-    .parseint_2
-        IMM @function_return 2
-        JMP @return_address
-    .parseint_3
-        IMM @function_return 3
-        JMP @return_address
-    .parseint_4
-        IMM @function_return 4
-        JMP @return_address
-    .parseint_5
-        IMM @function_return 5
-        JMP @return_address
-    .parseint_6
-        IMM @function_return 6
-        JMP @return_address
-    .parseint_7
-        IMM @function_return 7
-        JMP @return_address
-    .parseint_8
-        IMM @function_return 8
-        JMP @return_address
-    .parseint_9
-        IMM @function_return 9
-        JMP @return_address
-    .parseint_illegal_char
-        IMM @function_return 127
-        JMP @return_address
-.fn_v1 // UOS function 1 sector VIDEO SERVICES: draw, signature: V (x, y, clr)
-    POP r28 // get the first argument from stack
-    POP r27 // get the second argument from the stack
-    POP r26 // get the third argument from the stack
-    OUT 11 2 // 11 for %BUFFER
-    OUT 8 r28 // send value of r28 to port 8 (X)
-    OUT 9 r27 // send value of r27 to port 9 (Y)
-    OUT 10 r26 // send value of r26 to port 10 (COLOUR)
-    OUT 11 1 // lock the buffer
-    JMP @return_address
 
 .lscp // low code space (OS)
 .r
-    // Dear OS developer, put your OS code here.
-HLT
-JMP .r // jump to init
+.c10 // uos
+    OUT 1 'U'
+    OUT 1 'O'
+    OUT 1 'S'
+    OUT 1 ' '
+    JMP .c11
+    OUT 1 '\n'
+    JMP .ial1
+HLT // halt if something goes wrong
+.ial1 // Initialize all
+    OUT 1 '>'
+    IMM @counter -1 // Make sure we end up at 0 in the counter when INCing it
+    IMM r1 0 // Initialize r1 to ensure that r1 is clean
+    IMM r2 0 // ensure r2 is clean
+    IMM r3 0 // ensure r3 is clean as well
+    JMP .exe1 // then jump to input handler
+HLT // halt if something goes wrong
+.exe1 // Execute 1
+    IMM @return_address ~+2 // return address to *
+    JMP .fn_g1 // FAR JUMP to UOS function 1 sector GENERAL: getch_echo
+    IMM r1 @function_return
+    BRE .pce0 r1 '\n' // if \n then jump to command parser; * here
+    ADD @counter @counter 1 // add 1 to the counter register
+    STR @counter r1 // we also store the key at the address specified by the counter
+    MOV @command_length @counter // for covinience
+    ADD @command_length_with_terminator @command_length 1
+.exe1p // segment p of exe1
+    JMP .exe1
+.exe1p2 // end of command parsing
+    OUT 1 '>'
+    IMM @command_length 0 // reset the command length
+    IMM @command_length_with_terminator 0 // reset cmd length w/ terminator
+    IMM @counter -1 // reset the counter
+    IMM @return_address ~+2 // *
+    JMP .fn_m2 // DONT FORGET TO RESET AFTER INPUT
+    JMP .exe1p // * this will arrive here
+.pce0 // command parser
+    IMM @counter 0 // reset the counter
+    LOD r32 @counter // load the character into r32
+    BRE ~+2 r32 'm' // if r32 (loaded char) is m, jump to the second next instruction
+    JMP .echo_match // else, jump to echo matching
+    ADD @counter @counter 1 // increment the counter
+    LOD r32 @counter // and so on
+    BRE ~+2 r32 'e'
+    JMP .echo_match
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 'm'
+    JMP .echo_match
+    ADD @counter @counter 1
+    LOD r32 @counter
+    SETE r30 @command_length 2
+    BRE .mem_command r30 0xFFFF // if the result of the SETE is 255, go to the mem command
+.echo_match // match for echo?
+    IMM @counter 0
+    LOD r32 @counter
+    BRE ~+2 r32 'e'
+    JMP .match_psi
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 'c'
+    JMP .match_psi
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 'h'
+    JMP .match_psi
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 'o'
+    JMP .match_psi
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE .echo_command r32 ' '
+    BRE .echonl_command r32 '.'
+    JMP .match_psi
+.match_psi
+    IMM @counter 0
+    LOD r32 @counter
+    BRE ~+2 r32 'p'
+    JMP .invalid
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 's'
+    JMP .invalid
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE ~+2 r32 'i'
+    JMP .invalid
+    ADD @counter @counter 1
+    LOD r32 @counter
+    BRE .psi_commmand r32 ' '
+    JMP .invalid
+.echo_command
+    IMM @return_address .exe1nl // set the return address of the function to be the end of the parsing
+    ADD @counter @counter 1 // increment the counter by 2 to avoid spaces
+    JMP .fn_v0 // FAR JUMP to UOS function 0 sector VIDEO SERVICES (print)
+.echonl_command
+    JMP .exe1nl // just outputs \n, sufficient for the needs
+.mem_command
+    // prints 'Conventional memory: 100 bytes'
+    OUT 1 'C'
+    OUT 1 'o'
+    OUT 1 'v'
+    OUT 1 'e'
+    OUT 1 'n'
+    OUT 1 't'
+    OUT 1 'i'
+    OUT 1 'o'
+    OUT 1 'n'
+    OUT 1 'a'
+    OUT 1 'l'
+    OUT 1 ' '
+    OUT 1 'm'
+    OUT 1 'e'
+    OUT 1 'm'
+    OUT 1 'o'
+    OUT 1 'r'
+    OUT 1 'y'
+    OUT 1 ':'
+    OUT 1 ' '
+    OUT 2 100
+    OUT 1 ' '
+    OUT 1 'b'
+    OUT 1 'y'
+    OUT 1 't'
+    OUT 1 'e'
+    OUT 1 's'
+    OUT 1 '\n'
+    IMM @function_return 0 // reset the function return
+    IMM @return_address ~+2 // set the return address to the instruction after the next
+    JMP .fn_m1 // FAR JUMP to UOS function 1 sector MEMORY (getfree)
+    OUT 1 'F' // prints 'Free memory: %i bytes'
+    OUT 1 'r'
+    OUT 1 'e'
+    OUT 1 'e'
+    OUT 1 ' '
+    OUT 1 'm'
+    OUT 1 'e'
+    OUT 1 'm'
+    OUT 1 'o'
+    OUT 1 'r'
+    OUT 1 'y'
+    OUT 1 ':'
+    OUT 1 ' '
+    OUT 2 @function_return
+    OUT 1 ' '
+    OUT 1 'b'
+    OUT 1 'y'
+    OUT 1 't'
+    OUT 1 'e'
+    OUT 1 's'
+    OUT 1 '\n'
+    // prints 'Reserved memory: %i bytes'
+    OUT 1 'R'
+    OUT 1 'e'
+    OUT 1 's'
+    OUT 1 'e'
+    OUT 1 'r'
+    OUT 1 'v'
+    OUT 1 'e'
+    OUT 1 'd'
+    OUT 1 ' '
+    OUT 1 'm'
+    OUT 1 'e'
+    OUT 1 'm'
+    OUT 1 'o'
+    OUT 1 'r'
+    OUT 1 'y'
+    OUT 1 ':'
+    OUT 1 ' '
+    OUT 2 @max_print
+    OUT 1 ' '
+    OUT 1 'b'
+    OUT 1 'y'
+    OUT 1 't'
+    OUT 1 'e'
+    OUT 1 's'
+    JMP .exe1nl
+.psi_commmand
+    ADD @counter @counter 1 // increment the counter by 2 to avoid spaces
+    LOD r32 @counter
+    PSH r32
+    IMM @return_address ~+2 // set the return address of the function to be the end of the parsing
+    JMP .fn_g3 // FAR JUMP to UOS function 3 sector GENERAL (parseint)
+    BRE .psi_command_illegal_character @function_return 127
+    OUT 2 @function_return
+    IMM @function_return 0
+    JMP .exe1nl
+    .psi_command_illegal_character
+        OUT 1 'I'
+        OUT 1 'l'
+        OUT 1 'l'
+        OUT 1 'e'
+        OUT 1 'g'
+        OUT 1 'a'
+        OUT 1 'l'
+        OUT 1 ' '
+        OUT 1 'c'
+        OUT 1 'h'
+        OUT 1 'a'
+        OUT 1 'r'
+        OUT 1 'a'
+        OUT 1 'c'
+        OUT 1 't'
+        OUT 1 'e'
+        OUT 1 'r'
+        OUT 1 ' '
+        OUT 1 'f'
+        OUT 1 'o'
+        OUT 1 'r'
+        OUT 1 ' '
+        OUT 1 'p'
+        OUT 1 'a'
+        OUT 1 'r'
+        OUT 1 's'
+        OUT 1 'e'
+        OUT 1 'i'
+        OUT 1 'n'
+        OUT 1 't'
+        OUT 1 '.'
+        JMP .exe1nl
+.exe1nl
+    OUT 1 '\n'
+    JMP .exe1p2
+.invalid
+    // prints 'Invalid Command.'
+    OUT 1 'I'
+    OUT 1 'n'
+    OUT 1 'v'
+    OUT 1 'a'
+    OUT 1 'l'
+    OUT 1 'i'
+    OUT 1 'd'
+    OUT 1 ' '
+    OUT 1 'c'
+    OUT 1 'o'
+    OUT 1 'm'
+    OUT 1 'm'
+    OUT 1 'a'
+    OUT 1 'n'
+    OUT 1 'd'
+    OUT 1 '.'
+    OUT 1 '\n'
+    IMM @return_address .exe1p2 // set return address to begin of command input
+    JMP .fn_m1 // FAR JUMP to UOS function 1 sector MEMORY: free_input
