@@ -1,4 +1,4 @@
-// This should be put in the kernel's .lscp
+// This should be put in the kernel's .lscp when testing.
 
 .lscp // low code space (OS)
 .r
