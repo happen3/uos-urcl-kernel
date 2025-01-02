@@ -7,7 +7,6 @@
     OUT 1 'O'
     OUT 1 'S'
     OUT 1 ' '
-    JMP .c11
     OUT 1 '\n'
     JMP .ial1
 HLT // halt if something goes wrong
