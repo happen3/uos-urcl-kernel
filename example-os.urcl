@@ -1,4 +1,6 @@
 // This should be put in the kernel's .lscp when testing.
+@DEFINE command_length r20
+@DEFINE command_length_with_terminator r21
 
 .lscp // low code space (OS)
 .r
