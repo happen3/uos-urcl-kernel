@@ -131,8 +131,6 @@ JMP .lscp
     OUT 11 1 // lock the buffer
     JMP @return_address
 
-.lscp // low code space (OS)
-.r
 [IMPORT "OS"]
 HLT
 JMP .r // jump to init
