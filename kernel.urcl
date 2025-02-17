@@ -10,7 +10,7 @@ MINREG 32
 // reserved for graphics
 // r28, r27, r26
 //  x    y   CLR
-// for function users: please sure you push your arguments in reverse order compared to the signature to the stack.
+// for function users: please make sure you push your arguments in reverse order compared to the signature to the stack.
 
 IMM @max_print 56 // default
 JMP .lscp
